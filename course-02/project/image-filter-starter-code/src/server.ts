@@ -1,6 +1,8 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
+import { requireAuth } from './auth';
+
 
 (async () => {
 
@@ -26,26 +28,25 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   //    image_url: URL of a publicly accessible image
   // RETURNS
   //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
-  app.get("/filteredimage", async (req, res) => {
+  app.get("/filteredimage", 
+    requireAuth, 
+    async (req, res) => {
     const imageUrl = req.query.image_url;
 
     // check imageUrl is valid
     if (!imageUrl) {
       return res.status(400).send({
-        message: "The image url is required or malformed"
+        message: "Bad image url"
       });
     }
 
-    try {
-      console;
-      const filteredImageFromURL = await filterImageFromURL(imageUrl);
-      res.sendFile(filteredImageFromURL, () =>
-        deleteLocalFiles([filteredImageFromURL])
-      );
-    } catch (error) {
-      res.sendStatus(422).send("Unable to process image at the provided url");
-    }
-  });
+    const filteredImageFromURL = await filterImageFromURL(imageUrl);
+    res.sendFile(filteredImageFromURL, (err) => {
+        deleteLocalFiles([filteredImageFromURL]);
+      if(err) {
+        res.sendStatus(422).send("Unable to process image");
+      }
+    })});
   /**************************************************************************** */
 
   //! END @TODO1
